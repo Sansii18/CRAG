@@ -1,0 +1,72 @@
+🔴 Why this project is needed (Core Problem)
+Normal RAG systems assume retrieved data is always correct and relevant.
+
+👉 But in reality:
+# Retrieval can be irrelevant
+# Context can be incomplete
+# Data can be outdated or noisy
+➡️ Result: The model gives confident but wrong answers
+
+⚠️ Problems in Normal RAG (with example)
+🧠 Flow of Normal RAG:
+User asks question
+System retrieves documents
+LLM generates answer from those docs
+👉 PROBLEM : No validation step
+
+❌ Example (Medical Case)
+User Query:
+"What are causes of chest pain?"
+
+What RAG retrieves (wrong context):
+Document about muscle soreness
+Document about acid reflux only
+
+What happens:
+LLM answers based only on these docs
+Misses heart attack (critical cause)
+
+👉 Output:
+“Chest pain is usually due to muscle strain or acidity.”
+
+🚨 Danger: Completely misses life-threatening causes
+
+🔥 Key Issues in Normal RAG
+# Blind Trust in Retrieval
+# No check if retrieved data is actually relevant
+# No Fallback Mechanism
+If retrieval fails → system still answers
+Hallucination Risk
+LLM fills gaps with assumptions
+Low Reliability in Critical Domains (Healthcare, finance, legal → unacceptable errors) 
+
+🟢 What CRAG Solves (Project Idea)
+
+CRAG = Corrective RAG (Self-validating system)
+
+👉 Adds intelligence between retrieval and generation
+
+🧠 CRAG Flow 
+User query
+Retrieve documents (Qdrant)
+🔍 Evaluate relevance (NEW STEP)
+If good → generate answer
+If bad → 🌐 fallback to web search (Tavily) 
+Re-evaluate
+If still low → ❌ refuse to answer
+✅ Same Example with CRAG
+
+
+User Query:
+"What are causes of chest pain?"
+Step 1: Retrieval
+Gets weak/irrelevant docs
+Step 2: Evaluator (NEW)
+Detects: ❌ Low relevance
+Step 3: Fallback
+Uses Tavily → fetches trusted medical sources
+Step 4: Re-check + Generate
+
+👉 Output:
+“Chest pain can be caused by muscle strain, acid reflux, or serious conditions like heart attack. Seek medical attention if severe.”
+✅ Now it's complete + safer
