@@ -13,26 +13,30 @@ from pydantic import model_validator
 load_dotenv()
 
 
-# Hugging Face is used to create vector embeddings (in phase 2) and is used to generate answers (in phase 5).
-class HuggingFaceConfig(BaseSettings):
-    api_key: str = os.getenv("HF_API_KEY","")
-    model_id: str = os.getenv("HF_MODEL_ID", "BAAI/bge-base-en-v1.5")
+# Nvidia is used to create vector embeddings (in phase 2) and is used to generate answers (in phase 5).
+class NvidiaConfig(BaseSettings):
+    api_key: str = os.getenv("NVIDIA_API_KEY", "")
+    embedding_model_id: str = os.getenv(
+        "NVIDIA_EMBEDDING_MODEL_ID",
+        "nvidia/nv-embedqa-e5-v5"
+    )
+    llm_model_id: str = os.getenv(
+        "NVIDIA_LLM_MODEL_ID",
+        "google/gemma-4-31b-it"
+    )
+    base_url: str = "https://integrate.api.nvidia.com/v1"
 
     @model_validator(mode="after")
-    def validate_hf_config(self):
+    def validate_nvidia_config(self):
         if not self.api_key:
-            raise ValueError("HF_API_KEY is not set")
-        if not self.model_id:
-            raise ValueError("HF_MODEL_ID is not set")
+            raise ValueError("NVIDIA_API_KEY is not set")
         return self
 
-# Qdrant is a free Vector Database which is used to store vector embeddings generated in phase 2. 
-# The QDRANT_VECTOR_SIZE=384 must match the embedding model's output size exactly. all-MiniLM-L6-v2 produces 384 dimensions. If you ever swap to a different embedding model (like text-embedding-ada-002 which produces 1536 dims), this number must change and your entire collection must be recreated.
 class QdrantConfig(BaseSettings):
     url: str = os.getenv("QDRANT_URL","")
     api_key: str = os.getenv("QDRANT_API_KEY","")
     collection_name: str = os.getenv("QDRANT_COLLECTION_NAME", "")
-    vector_size: int = int(os.getenv("QDRANT_VECTOR_SIZE", "384"))
+    vector_size: int = int(os.getenv("QDRANT_VECTOR_SIZE", "1024"))
 
     @model_validator(mode="after")
     def validate_qdrant_config(self):
@@ -67,7 +71,7 @@ class CRAGConfig(BaseSettings):
 
 # Global config instance
 config = {
-    "huggingface": HuggingFaceConfig(),
+    "nvidia": NvidiaConfig(),
     "qdrant": QdrantConfig(),
     "tavily": TavilyConfig(),
     "crag": CRAGConfig()
@@ -76,7 +80,7 @@ config = {
 def get_config(service: str):
     if service not in config:
         raise KeyError(
-            f"Unknown service: '{service}'."
+            f"Unknown service: '{service}'. "
             f"Available services: {list(config.keys())}"
         )
     return config[service]
