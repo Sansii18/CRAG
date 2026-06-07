@@ -11,8 +11,9 @@ class GenerateEmbeddings:
             self.embeddings = NVIDIAEmbeddings(
                 model=model_name,
                 api_key=os.getenv("NVIDIA_API_KEY"),
-                base_url="https://api.nvidia.com/embeddings/v1",
-                truncate="UnicodeEncodeError" # handles chunks greater than model's max tokens
+                base_url="https://integrate.api.nvidia.com/v1",
+                truncate="END" 
+                # Document chunks are split so the most important context (topic, subject, key facts) appears at the start. Truncating from the end drops the least critical content and keeps the semantically meaningful part intact.
             )
             logger.info(f"Initialized NVIDIA NIM embeddings initialized: {model_name}")
         except Exception as e:
