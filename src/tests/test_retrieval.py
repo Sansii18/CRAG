@@ -1,10 +1,10 @@
 # This file is a quality gate, it verifies whether retrieval is working before building Phase 3 on top of it. A broken retrieval system discovered in Phase 5 wastes days of debugging. Discovering it here takes 10 seconds.
+import sys 
+sys.path.insert(0, '.')
 
 import pytest
 from src.core.VectorEmbeddings import GenerateEmbeddings
 from src.Integrations.Qdrant_client import StoreQdrant
-import sys 
-sys.path.insert(0, '.')
 
 # Generic queries ~ will work for any document domain
 GENERIC_TEST_QUERIES = [
