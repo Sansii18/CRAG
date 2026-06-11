@@ -18,7 +18,8 @@ class StoreQdrant:
                 url=config.url,
                 api_key=config.api_key,
                 prefer_grpc=False, # Use HTTP for stability
-                timeout = 60 # Wait up to 60 seconds for a response from the Qdrant server before giving up.
+                timeout=60, # Wait up to 60 seconds for a response from the Qdrant server before giving up.
+                check_compatibility=False  # Skip version compatibility check
             )
             self.collection_name = config.collection_name
             self.vector_size = config.vector_size
@@ -92,11 +93,11 @@ class StoreQdrant:
     def search(self, query_embedding : List[float], top_k : int = 5) -> List[Dict]:
         """Search Qdrant for similar documents"""
         try:
-            results = self.client.search(
-                collection_name=self.collection_name,
-                query_vector=query_embedding,
-                limit=top_k
-            )
+            response = self.client.query_points(
+            collection_name=self.collection_name,
+            query=query_embedding,
+            limit=top_k
+        )
 
             retrieved_chunks = [
                 {
@@ -104,7 +105,7 @@ class StoreQdrant:
                     "score": result.score,
                     "id": result.id
                 }
-                for result in results
+                for result in response.points
             ]
 
             logger.info(f"Retrieved {len(retrieved_chunks)} documents")
