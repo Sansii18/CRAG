@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from src.utils.config import get_config
 from src.utils.logger import logger
-from typing import List, Dict, Sequence
+from typing import List, Dict
 import uuid
 
 class StoreQdrant:
@@ -17,7 +17,8 @@ class StoreQdrant:
             self.client = QdrantClient(
                 url=config.url,
                 api_key=config.api_key,
-                prefer_grpc=False  # Use HTTP for stability
+                prefer_grpc=False, # Use HTTP for stability
+                timeout = 60 # Wait up to 60 seconds for a response from the Qdrant server before giving up.
             )
             self.collection_name = config.collection_name
             self.vector_size = config.vector_size
@@ -72,8 +73,8 @@ class StoreQdrant:
                 for chunk, embedding in zip(chunks, embeddings)
             ]
 
-            # Upload in batches (1000 points at a time)
-            batch_size = 1000
+            # Upload in batches (100 points at a time)
+            batch_size = 100
             for i in range(0, len(points), batch_size):
                 batch = points[i:i+batch_size]
                 self.client.upsert(
