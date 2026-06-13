@@ -11,4 +11,8 @@ langchain-core==0.2.0
 langchain-text-splitters==0.2.0
 sentence-transformers==2.2.2
 pypdf==4.2.0
-qdrant-client==1.16.1
+qdrant-client==1.18.1
+langchain-nvidia-ai-endpoints==0.1.4
+
+# PHASE 3 : RETRIEVAL EVALUATOR
+langchain-openai==0.1.8
