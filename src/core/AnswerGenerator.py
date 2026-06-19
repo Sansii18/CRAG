@@ -21,11 +21,11 @@ class AnswerGenerator:
         self.domain = domain
 
         self.templates = {
-            "high_confidence" : """Based on retrived information , here is the answer :
+            "high_confidence" : """Based on retrieved information , here is the answer :
             Context: {context}
             Answer : {answer}
             CONFIDENCE: HIGH (>80%)
-            Sources : {sources}
+            Sources: {sources}
             Note : This answer is based on relevant information from trusted sources.
             """,
 
