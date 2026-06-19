@@ -49,7 +49,7 @@ class TavilyRateLimiter:
 
     def can_search(self) -> bool:
         self.reset()
-        if self.searches_today < self.max_searches_per_day:
+        if self.searches_today >= self.max_searches_per_day:
             logger.warning(
                 f"Tavily rate limit reached: "
                 f"{self.searches_today}/{self.max_searches_per_day} today"
