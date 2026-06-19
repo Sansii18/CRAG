@@ -1,6 +1,6 @@
 # Tests the "AnswerGenerator" across all three confidence paths to confirm the correct template, structure, and content is returned. Catches bugs where wrong templates are selected or the LLM response is not properly formatted.
 
-import sys 
+import sys
 sys.path.insert(0, '.')
 
 import pytest
@@ -14,7 +14,7 @@ def generator():
 def test_high_confidence_path(generator):
     """Test answer generation for high confidence scenario ~ Calls NVIDIA API"""
 
-    result = generator.generate(
+    result = generator.generate_answer(
         query="What are the key findings in the documents?",         
         context="The documents outline key principles and methodologies "
         "used in structured problem solving and analysis.",
@@ -33,7 +33,7 @@ def test_high_confidence_path(generator):
 def test_medium_confidence_path(generator):
     """Test answer generation for medium confidence scenario ~ Calls NVIDIA API"""
 
-    result = generator.generate(
+    result = generator.generate_answer(
         query="What is the latest development in this topic?",
         context="Recent developments include several new approaches"
         "to the problem, with promising early results.",
@@ -53,7 +53,7 @@ def test_medium_confidence_path(generator):
 def test_low_confidence_path(generator):
     """Test answer generation for low confidence scenario ~ NO LLM CALL, just template response"""
 
-    result = generator.generate(
+    result = generator.generate_answer(
         query="Explain an extremely niche concept not covered anywhere",
         context="",
         confidence=0.2,
@@ -63,13 +63,14 @@ def test_low_confidence_path(generator):
     assert result["confidence_level"] == "low_confidence"
     assert result["confidence"] == 0.2
     assert "cannot reliably" in result["answer"]
-    assert result["sources"] == []
+    assert "Insufficient" in result["answer"]
+    assert "Consult a qualified professional" in result["answer"]
     print("Low confidence refusal passed")
 
 def test_generator_returns_correct_structure(generator):
     """Test return dict always has required keys ~ NO API call"""
 
-    result = generator.generate(
+    result = generator.generate_answer(
         query="test query",
         context="test context",
         confidence=0.2,
