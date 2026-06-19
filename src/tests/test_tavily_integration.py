@@ -20,8 +20,8 @@ def test_tavily_search():
     assert isinstance(results, list), "Should return list"
     if results and "error" not in results[0]:
         assert "title" in results[0],   "Missing title field"
-        assert "url" in results[0],     "Missing url field"
-        assert "content" in results[0], "Missing content field"
+        assert "url" in results[0],"Missing url field"
+        assert "content" in results[0],"Missing content field"
         assert "final_credibility_score" in results[0], \
             "Missing credibility score — enhance not called"
         print(f"Tavily returned {len(results)} results")
@@ -60,7 +60,7 @@ def test_rate_limiter(tmp_path, monkeypatch):
     limiter = TavilyRateLimiter(max_searches_per_day=5)
 
     for i in range(5):
-        assert limiter.can_search(), f"Should allow search {i+1}"
+        assert limiter.can_search(),f"Should allow search {i+1}"
         limiter.increment()
 
     assert not limiter.can_search(), "Should deny after limit"
