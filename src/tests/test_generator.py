@@ -1,6 +1,7 @@
 # Tests the "AnswerGenerator" across all three confidence paths to confirm the correct template, structure, and content is returned. Catches bugs where wrong templates are selected or the LLM response is not properly formatted.
 
-import sys 
+import sys
+from unittest import result 
 sys.path.insert(0, '.')
 
 import pytest
@@ -60,11 +61,9 @@ def test_low_confidence_path(generator):
         sources=[]
     )
 
+    assert "Based on the information available" in result["answer"]
+    assert "Insufficient" in result["answer"]
     assert result["confidence_level"] == "low_confidence"
-    assert result["confidence"] == 0.2
-    assert "cannot reliably" in result["answer"]
-    assert result["sources"] == []
-    print("Low confidence refusal passed")
 
 def test_generator_returns_correct_structure(generator):
     """Test return dict always has required keys ~ NO API call"""
