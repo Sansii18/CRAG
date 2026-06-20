@@ -31,7 +31,69 @@ def init_base_components():
     fallback = FallbackHandler()
     return embedder, qdrant, router, fallback
 
+# ── Document Upload ───────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("---")
+    st.subheader("📄 Upload Documents")
 
+    uploaded_files = st.file_uploader(
+        "Upload PDF or TXT files",
+        type=["pdf", "txt"],
+        accept_multiple_files=True,
+        help="Upload documents to add to the knowledge base"
+    )
+
+    if uploaded_files:
+        if st.button("⬆️ Ingest Documents", use_container_width=True):
+            import tempfile
+            import os
+            from src.core.data_ingestion import DocumentIngestor # type: ignore
+
+            ingestor = DocumentIngestor()
+            all_chunks = []
+
+            progress = st.progress(0)
+            status   = st.empty()
+
+            for i, file in enumerate(uploaded_files):
+                # Write uploaded file to a temp path so loaders can read it
+                suffix = ".pdf" if file.type == "application/pdf" else ".txt"
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=suffix
+                ) as tmp:
+                    tmp.write(file.read())
+                    tmp_path = tmp.name
+
+                status.text(f"Processing: {file.name}")
+                try:
+                    docs   = ingestor.load_data(tmp_path)       # ← your method name
+                    chunks = ingestor.split_data(docs)          # ← your method name
+                    all_chunks.extend(chunks)
+                except Exception as e:
+                    st.error(f"Failed to process {file.name}: {e}")
+                finally:
+                    os.unlink(tmp_path)                         # clean up temp file
+
+                progress.progress((i + 1) / len(uploaded_files))
+
+            if all_chunks:
+                status.text("Generating embeddings and uploading to Qdrant...")
+                try:
+                    chunk_texts = [c.page_content for c in all_chunks]
+                    embeddings  = embedder.embed_chunks(chunk_texts) # type: ignore
+                    qdrant.create_collection(force_recreate=False) # type: ignore
+                    qdrant.upload_embeddings(chunk_texts, embeddings) # type: ignore
+
+                    st.success(
+                        f"✅ {len(all_chunks)} chunks from "
+                        f"{len(uploaded_files)} file(s) added to knowledge base"
+                    )
+                    # Clear cache so sidebar status updates
+                    st.cache_resource.clear()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Upload failed: {e}")
+                    
 # ── Cache evaluator and generator per domain ─────────────────────────────────
 @st.cache_resource # type: ignore
 def get_evaluator(domain: str) -> RetrievalEvaluator:
