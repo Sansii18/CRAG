@@ -28,7 +28,7 @@ class DataIngestion:
         pdf_loader = DirectoryLoader(
             directory,
             glob="**/*.pdf",
-            loader_cls=PyPDFLoader
+            loader_cls=PyPDFLoader 
         )
         docs.extend(pdf_loader.load())
         logger.info(f"Loaded {len(docs)} PDFs from {directory}")
