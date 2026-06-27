@@ -1,31 +1,29 @@
 # PHASE 1 : INFRASTRUCTURE SETUP 
 python-dotenv==1.0.0
-pydantic==2.13.4
-pydantic-settings==2.11.0
+pydantic>=2.5.0,<3.0.0
+pydantic-settings>=2.5.0,<3.0.0
 loguru==0.7.2
 
 # PHASE 2 : DATA PIPELINE & VECTOR SETUP
-langchain==0.3.7
-langchain-community==0.3.7
-langchain-core==0.3.86
-langchain-text-splitters==0.3.2
-langchain-nvidia-ai-endpoints==0.3.19
-pypdf==4.2.0
-qdrant-client==1.18.1
+langchain>=0.3.7,<0.4.0
+langchain-community>=0.3.7,<0.4.0
+langchain-core>=0.3.15,<0.4.0
+langchain-text-splitters>=0.3.2,<0.4.0
+langchain-nvidia-ai-endpoints>=0.3.0
+pypdf>=4.2.0
+qdrant-client==1.18.0
 
 # PHASE 3 : RETRIEVAL EVALUATOR
-langchain-openai==0.3.35
-langsmith==0.4.37
+langchain-openai>=0.2.0,<0.4.0
 
 # PHASE 4 : WEB SEARCH FALLBACK
-tavily-python==0.7.24
+tavily-python>=0.3.0
 
 # PHASE 5 : ANSWER GENERATION
 # No new packages, uses langchain-openai from Phase 3
 
 # PHASE 6 : STREAMLIT UI
-streamlit==1.50.0
+streamlit>=1.37.0
 
 # PHASE 7 : TESTING
-pytest==8.4.2
-anyio==4.12.1
+pytest>=8.0.0
