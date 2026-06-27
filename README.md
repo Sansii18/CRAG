@@ -1,4 +1,4 @@
-# 🔍 AdaptCRAG — Corrective Retrieval Augmented Generation
+# CRAG — Corrective Retrieval Augmented Generation
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white" />
