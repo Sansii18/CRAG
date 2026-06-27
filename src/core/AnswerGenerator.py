@@ -13,7 +13,7 @@ class AnswerGenerator:
             model = config_nvidia.llm_model_id,
             api_key = config_nvidia.api_key,
             base_url = config_nvidia.base_url,
-            temperature=0.2,
+            temperature=0,
             max_completion_tokens=500,
             timeout=140, # in .env -> NVIDIA_LLM_MODEL_ID = google/gemma-4-31b-it takes 90-120 seconds to load , increase the timeout
             max_retries=1
