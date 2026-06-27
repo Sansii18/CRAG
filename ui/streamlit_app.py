@@ -324,16 +324,24 @@ with st.sidebar:
     if uploaded_files:
         if st.button("⬆️ Ingest Documents", use_container_width=True):
             all_chunks = []
+            all_metadata = []
             progress   = st.progress(0)
             status     = st.empty()
 
             for i, file in enumerate(uploaded_files):
                 suffix = ".pdf" if file.type == "application/pdf" else ".txt"
 
+                file_bytes = file.read()
+
+                if not file_bytes:
+                    st.warning(f"⚠️ {file.name} is empty — skipping")
+                    progress.progress((i + 1) / len(uploaded_files))
+                    continue
+
                 with tempfile.NamedTemporaryFile(
                     delete=False, suffix=suffix
                 ) as tmp:
-                    tmp.write(file.read())
+                    tmp.write(file_bytes)
                     tmp_path = tmp.name
 
                 status.text(f"Processing: {file.name}...")
@@ -346,11 +354,20 @@ with st.sidebar:
 
                     docs   = loader.load()
                     chunks = ingestor.split_data(docs)   # reuse split_data
+
+                    for chunk in chunks:
+                        all_metadata.append({
+                            "title":       file.name,                    # real filename
+                            "source":      file.name,
+                            "source_type": "local_kb",
+                            "page":        chunk.metadata.get("page", 0),
+                        })
+
                     all_chunks.extend(chunks)
-                    status.text(f"✅ {file.name}: {len(chunks)} chunks")
+                    status.text(f"✅ {file.name}: {len(chunks)} chunks created")
 
                 except Exception as e:
-                    st.warning(f"⚠️ Failed: {file.name} — {e}")
+                    st.warning(f"⚠️ Failed to process {file.name}: {e}")
                 finally:
                     os.unlink(tmp_path)
 
@@ -360,20 +377,68 @@ with st.sidebar:
                 status.text(f"Uploading {len(all_chunks)} chunks to Qdrant...")
                 try:
                     chunk_texts = [c.page_content for c in all_chunks]
+                    
+                    # metadata = [
+                    #     {
+                    #         "title":       c.metadata.get("source", "unknown").split("/")[-1],
+                    #         "source":      c.metadata.get("source", "unknown"),
+                    #         "source_type": "local_kb",
+                    #         "page":        c.metadata.get("page", 0),
+                    #     }
+                    #     for c in all_chunks
+                    # ]
+
                     embeddings  = embedder.embed_chunks(chunk_texts)
                     qdrant.create_collection(force_recreate=False)
-                    qdrant.upload_embeddings(chunk_texts, embeddings)
+                    qdrant.upload_embeddings(
+                        chunk_texts,
+                        embeddings,
+                        metadata=all_metadata    # ← real filenames passed here
+                    )
+
+                    # metadata = []
+                    # file_index = 0
+                    # chunks_per_file = []
+
+                    # temp_chunks_count = 0
+                    # for file in uploaded_files:
+                    #     suffix = ".pdf" if file.type == "application/pdf" else ".txt"
+                    #     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    #         tmp.write(file.read())
+                    #         tmp_path = tmp.name
+                    #     if suffix == ".pdf":
+                    #         loader = PyPDFLoader(tmp_path)
+                    #     else:
+                    #         loader = TextLoader(tmp_path, encoding="utf-8")
+                    #     file_docs = loader.load()
+                    #     file_chunks = ingestor.split_data(file_docs)
+                    #     chunks_per_file.append((file.name, len(file_chunks)))
+                    #     os.unlink(tmp_path)
+
+                    # # Build metadata matching chunk order
+                    # for filename, count in chunks_per_file:
+                    #     for _ in range(count):
+                    #         metadata.append({
+                    #             "title": filename,           
+                    #             "source": filename,
+                    #             "source_type": "local_kb",
+                    #             "page": 0
+                    #         })
+
+                    # embeddings = embedder.embed_chunks(chunk_texts)
+                    # qdrant.create_collection(force_recreate=False)
+                    # qdrant.upload_embeddings(chunk_texts, embeddings, metadata=metadata)
 
                     st.success(
                         f"✅ {len(all_chunks)} chunks from "
-                        f"{len(uploaded_files)} file(s) added"
+                        f"{len(uploaded_files)} file(s) added to knowledge base"
                     )
                     st.cache_resource.clear()
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Upload failed: {e}")
             else:
-                st.error("❌ No content extracted from files")
+                st.error("❌ No content extracted — check your files")
 
     st.markdown("---")
     st.header("⚙️ Configuration")
@@ -506,10 +571,19 @@ if submit:
     if response.get("sources"):
         with st.expander("📚 View Sources"):
             for i, source in enumerate(response["sources"][:5], 1):
-                st.write(f"**Source {i}:** {source.get('title', 'Unknown')}")
+
+                title = (
+                    source.get("title") or
+                    source.get("source") or
+                    source.get("url") or
+                    "Local Document"
+                )
+                st.write(f"**Source {i}:** {title}")
                 if source.get("url"):
                     st.write(f"🔗 URL: {source['url']}")
                 st.write(f"📁 Type: `{source.get('source_type', 'unknown')}`")
+                st.write(f"📄 Page: {source.get('page', 'N/A')}")
+
                 if source.get("score"):
                     st.write(f"⭐ Score: {source['score']:.3f}")
                 st.divider()

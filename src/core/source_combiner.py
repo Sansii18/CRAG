@@ -27,7 +27,12 @@ class SourceCombiner:
                 "source_type": "local_db",
                 "priority": 1.0,
                 "score": doc.get("score", 0.7),
-                "url": None
+                "url": None,
+                "title":(
+                    doc.get("title") or
+                    doc.get("source") or
+                    "Local Document"
+                )
             })
 
         # TAVILY WEB RESULTS -> SECOND PRIORITY

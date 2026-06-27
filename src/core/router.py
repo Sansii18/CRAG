@@ -6,7 +6,7 @@ class ConditionalRouer:
         self.domain_thresholds = {
             "general" : {
                 "high" : 0.7, 
-                "medium" : 0.5,
+                "medium" : 0.55,
             },
             "legal" : {
                 "high" : 0.9, 
@@ -14,12 +14,16 @@ class ConditionalRouer:
             },
             "technical" : {
                 "high" : 0.75, 
-                "medium" : 0.5,
+                "medium" : 0.55,
             },
             "financial" : {
                 "high" : 0.8, 
-                "medium" : 0.55,
+                "medium" : 0.6,
             },
+            "academic": {
+                "high":   0.80,
+                "medium": 0.6,
+            }
         }
 
     def route(self,confidence: float,query: str, domain: str = "general") -> Literal["GENERATE", "WEB_SEARCH", "REFUSE"]:

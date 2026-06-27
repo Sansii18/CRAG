@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from src.utils.config import get_config
 from src.utils.logger import logger
-from typing import List, Dict
+from typing import List, Dict, Optional
 import uuid
 
 class StoreQdrant:
@@ -59,7 +59,10 @@ class StoreQdrant:
             raise e
         
     
-    def upload_embeddings(self, chunks : List[str], embeddings : List[List[float]]):
+    def upload_embeddings(self, 
+                          chunks : List[str], 
+                          embeddings : List[List[float]],
+                          metadata: Optional[List[Dict]] = None) -> None:
         """Upload document chunks and embeddings to Qdrant"""
         if len(chunks) != len(embeddings):
             raise ValueError("Chunks and embeddings must have the same length")
@@ -67,23 +70,31 @@ class StoreQdrant:
         try : 
             points = [
                 PointStruct(
-                    id = str(uuid.uuid4()),  # Generate unique ID for each point
+                    id = str(uuid.uuid4()),
                     vector = embedding,
-                    payload = {"text": chunk}  # Store original text in payload
+                    payload={
+                        "text": chunk,
+                        # Merge metadata if provided — adds title, source, page etc.
+                        **(metadata[i] if metadata and i < len(metadata) else {})
+                    }
                 )
-                for chunk, embedding in zip(chunks, embeddings)
+                for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
             ]
 
             # Upload in batches (100 points at a time)
             batch_size = 100
+            total_batches = (len(points) + batch_size - 1) // batch_size
+
             for i in range(0, len(points), batch_size):
-                batch = points[i:i+batch_size]
+                batch = points[i:i + batch_size]
+                batch_num = (i // batch_size) + 1
                 self.client.upsert(
                     collection_name=self.collection_name,
                     points=list(batch)
                 )
-                logger.info(f"Uploaded batch {i//batch_size + 1}/{(len(points)-1)//batch_size + 1}")
-            logger.info(f"Uploaded {len(points)} vectors to Qdrant")
+                logger.info(f"Uploaded batch {batch_num}/{total_batches}")
+
+            logger.info(f"Uploaded {len(points)} vectors to '{self.collection_name}'")
 
         except Exception as e:
             logger.error(f"Failed to upload embeddings: {e}")
@@ -94,22 +105,28 @@ class StoreQdrant:
         """Search Qdrant for similar documents"""
         try:
             response = self.client.query_points(
-            collection_name=self.collection_name,
-            query=query_embedding,
-            limit=top_k
-        )
+                collection_name=self.collection_name,
+                query=query_embedding,
+                limit=top_k
+            )
 
             retrieved_chunks = [
                 {
-                    "text": result.payload["text"] if result.payload and "text" in result.payload else "",
-                    "score": result.score,
-                    "id": result.id
+                "text":        result.payload.get("text", "")        if result.payload else "",
+                "score":       result.score,
+                "id":          result.id,
+                # Return metadata fields too
+                "title":       result.payload.get("title", "Unknown") if result.payload else "Unknown",
+                "source":      result.payload.get("source", "Unknown") if result.payload else "Unknown",
+                "source_type": result.payload.get("source_type", "local_kb") if result.payload else "local_kb",
+                "page":        result.payload.get("page", 0)          if result.payload else 0,
                 }
                 for result in response.points
             ]
 
             logger.info(f"Retrieved {len(retrieved_chunks)} documents")
             return retrieved_chunks
+
         except Exception as e:
             logger.error(f"Search failed: {e}")
             raise e

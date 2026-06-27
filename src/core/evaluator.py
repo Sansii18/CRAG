@@ -13,7 +13,7 @@ class RetrievalEvaluator:
             model = config_nvidia.llm_model_id,
             api_key = config_nvidia.api_key,
             base_url = config_nvidia.base_url,
-            temperature = 0.2
+            temperature = 0
         )
 
         self.domain = domain
@@ -28,7 +28,7 @@ class RetrievalEvaluator:
             2. Is the information accurate and relevant? (Yes/No)
             3. Confidence Score (0.0 - 1.0) : ?
 
-            Respond only in JSON format as follows: 
+            Respond only in JSON format as follows (no extra text): 
             {{
                 "address_query": true/false,
                 "is_relevant": true/false,
@@ -47,7 +47,7 @@ class RetrievalEvaluator:
             2. Is the information relevant and accurate? (Yes/No)
             3. Confidence Score (0.0-1.0): ?
 
-            Respond only in JSON format as follows: 
+            Respond only in JSON format as follows (no extra text): 
             {{
                 "address_query": true/false,
                 "is_relevant": true/false,
@@ -66,7 +66,7 @@ class RetrievalEvaluator:
             2. Is the information relevant and accurate? (Yes/No)
             3. Confidence Score (0.0-1.0): ?
 
-            Respond only in JSON format as follows: 
+            Respond only in JSON format as follows (no extra text): 
             {{
                 "address_query": true/false,
                 "is_relevant": true/false,
@@ -85,7 +85,7 @@ class RetrievalEvaluator:
             2. Is the information relevant and accurate? (Yes/No)
             3. Confidence Score (0.0-1.0): ?
 
-            Respond only in JSON format as follows: 
+            Respond only in JSON format as follows (no extra text): 
             {{
                 "address_query": true/false,
                 "is_relevant": true/false,
@@ -94,13 +94,13 @@ class RetrievalEvaluator:
             }}"""
         }
 
-    def evaluate(self , query : str, retrived_docs: list) -> Tuple[float, Dict]:
+    def evaluate(self , query : str, retrieved_docs: list) -> Tuple[float, Dict]:
         """Evaluate retrieved documents and return confidence score."""
 
         try:
             doc_text = "\n---\n".join([
                 f"Document {i+1}: {doc['text'][:500]}"
-                for i, doc in enumerate(retrived_docs)
+                for i, doc in enumerate(retrieved_docs)
             ])
 
             prompt_template_str = self.evaluation_prompt.get(
@@ -120,10 +120,26 @@ class RetrievalEvaluator:
 
             response = self.llm.invoke(formatted_prompt)
 
-            response_text = response.content if hasattr(response, 'content') else str(response)
+            response_text = (
+                response.content
+                if hasattr(response, 'content')
+                else str(response)
+            )
 
-            evaluation = json.loads(response_text)
-            confidence = evaluation.get("confidence_score", 0.0)
+            import re
+            clean_text = re.sub(r'```(?:json)?\n?', '', response_text).strip()
+            clean_text = clean_text.replace('```', '').strip()
+
+            evaluation = json.loads(clean_text)
+
+            confidence = (
+                evaluation.get("confidence_score") or
+                evaluation.get("confidence") or
+                evaluation.get("score") or
+                0.5    # ← safe default if key missing
+            )
+
+            confidence = float(confidence)
 
             logger.info(
                 f"Evaluation | domain={self.domain} | "
@@ -133,8 +149,8 @@ class RetrievalEvaluator:
             return confidence, evaluation
         
         except json.JSONDecodeError as e:
-            logger.warning(f"Failed to parse LLM response: {e}. Using default.")
-            return 0.5, {"confidence_score": 0.5, "reasoning": "JSON parsing error"}
+            logger.warning(f"JSON parse failed: {e} — using default 0.5")
+            return 0.5, {"confidence_score": 0.5, "reasoning": "JSON parse error"}
         except Exception as e:
             logger.error(f"Evaluation failed: {e}")
             return 0.3, {"confidence_score": 0.3, "reasoning": str(e)}

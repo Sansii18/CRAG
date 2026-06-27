@@ -3,7 +3,7 @@ venv/
 plan.md
 PROJECT_ROADMAP.md
 Requirements_All.txt
-tavily_usage.json
+.tavily_usage.json
 
 data/raw/*
 data/embeddings/*

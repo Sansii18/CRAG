@@ -21,37 +21,36 @@ class AnswerGenerator:
         self.domain = domain
 
         self.templates = {
-            "high_confidence" : """Based on retrieved information , here is the answer :
-            Context: {context}
-            Answer : {answer}
-            CONFIDENCE: HIGH (>80%)
-            Sources: {sources}
-            Note : This answer is based on relevant information from trusted sources.
-            """,
+            "high_confidence": """Based on retrieved information, here is the answer:
 
-            "medium_confidence": """Based on available information and web search results, here is the answer:
+            {answer}
 
-            Context: {context}
-            Answer: {answer}
-            CONFIDENCE: MEDIUM (50-80%)
-            Sources: {sources}
-            Note: This answer combines local knowledge and web search results.
-            Consult a qualified professional for personalised advice.
-            """,
+            ---
+            **Confidence:** HIGH (>80%)
+            **Sources:** {sources}
+            **Note:** This answer is based on relevant information from trusted sources.""",
 
-            "low_confidence": """I cannot reliably answer this question with the available information.
+                "medium_confidence": """Based on available information and web search results, here is the answer:
 
-            Query: {query}
-            Issue: {issue}
+            {answer}
 
-            Recommendations:
-            1. Consult a qualified professional
-            2. Check official and authoritative sources on this topic
-            3. Rephrase your question for better results
+            ---
+            **Confidence:** MEDIUM (50-80%)
+            **Sources:** {sources}
+            **Note:** This answer combines local knowledge and web search results. Verify with authoritative sources for critical decisions.""",
 
-            Sources Consulted: {sources}
-            CONFIDENCE: LOW (<50%)
-            Note: The information available is insufficient. Exercise caution and seek expert advice."""
+                "low_confidence": """I cannot reliably answer this question with the available information.
+
+            **Query:** {query}
+            **Issue:** {issue}
+
+            **Recommendations:**
+            1. Upload documents relevant to this topic
+            2. Rephrase your question with more specific terms
+            3. Consult an authoritative source directly
+
+            **Sources consulted:** {sources}
+            **Confidence:** LOW (<50%)"""
         }
 
     def generate_answer(
@@ -62,9 +61,9 @@ class AnswerGenerator:
             sources : list
     ) -> Dict : 
         try : 
-            if confidence > 0.8:
+            if confidence >= 0.8:
                 confidence_level = "high_confidence"
-            elif confidence > 0.5:
+            elif confidence >= 0.5:
                 confidence_level = "medium_confidence"
             else:
                 confidence_level = "low_confidence"
@@ -72,7 +71,8 @@ class AnswerGenerator:
             template = self.templates[confidence_level]
 
             source_text = "\n".join([
-                f"- {s.get('title', 'Unknown')} ({s.get('source_type', 'unknown')})"
+                f"- {s.get('title') or s.get('source') or s.get('url') or 'Local Document'} "
+                f"({s.get('source_type', 'unknown')})"
                 for s in sources[:3]
             ])
 
@@ -103,7 +103,7 @@ class AnswerGenerator:
                 )
 
                 formatted_response = template.format(
-                    context = context[:500],
+                    # context = context[:500],
                     answer = answer_text,
                     sources = source_text
                 )
